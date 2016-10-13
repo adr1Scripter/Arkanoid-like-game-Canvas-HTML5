@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+        <meta charset='UTF-8'>
+        <link rel='stylesheet' type='text/css' href='styles_ball.css'>
+	</head>
+
+<body>
+    <header>
+    
+        <p id='screen'></p>
+        <p id='screen2'></p>
+        <br>
+        <div class='pannel'>
+            <input type='button' value='<' id='arrowLeft'>
+            <input type='button' value='>' id='arrowRight'>
+        <input type='button' value='x2' id='speedintervalsupra'>
+        <input type='button' value='+' id='speedintervalplus'>
+        
+    </div>
+    <canvas id='playzone' width='1000px' height='550px'></canvas>
+        
+    </header>
+    
+     <footer id='about'>
+     
+         <!--<p>Images used on this site are labelled by Google as appropiate for non-commercial purposes. Kanji characters by bexika -deviantart.com- and Mt. Fuji landscape by Moyan Brenn -flickr.com-. This website and its written content is copyright of Adrian Guerra - © Nihon Travels 2016. All rights reserved. </p>-->
+    </footer>
+    
+<script>
+    //---PSEUDOCONSTANT VARIABLES---//
+    var DEVAREA1=450;//determines from which y coord ball will receive deviation
+    var DEVAREA2=475;//same thing at a higher y, associated to a stronger deviation
+    var DEVAREA3=488;
+    var DEVAREA4=493;
+    var SPEEDINTERVAL=30;
+    var PADSTEP=20;
+    var ROOF=0;
+    var FLOOR=500;
+    var WALLRIGHT=998;
+    var WALLLEFT=2;
+    var BALLSTEP=2;
+    var RADIUS=3;
+    var PADHEIGHT=4;
+    
+    //---end of pseudoconstants
+    
+    //---WRITEABLE VARIABLES---//
+    
+    var x=500;
+    var deviationUp=0;
+    var deviationDown=0;
+    var y=100;
+    var falling=true;
+    var padOrigin=475;
+    var padEnd=525;
+    var padWidth=50;
+    var lives=2;
+    
+    //---end of variables
+    
+    
+    var playzone=document.getElementById('playzone');
+    var map=playzone.getContext('2d');
+    
+    function applyDeviation(value){
+        if(falling===true){ //applies deviation for the ascendig phase
+            deviationUp=value;
+        }
+    }
+    
+    function level1(){
+        map.clearRect(0,0,1000,550); //clears intro screen
+        setTimeout(function(){
+            map.font='40px Impact';
+            map.fillText('LEVEL 1',413,240);
+            setTimeout(function(){
+                map.clearRect(400,200,200,100);
+            },1000)
+            }, 500);
+        deviationDown=0;
+        deviationUp=0;
+        x=500;
+        y=100;
+        lives=2;
+        document.getElementById('screen').innerHTML='Your lives '+lives;
+        map.beginPath();
+        map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+        map.closePath();
+        
+        ballInterval=setInterval(decideMotion,SPEEDINTERVAL);
+        //setInterval(drawPad,SPEEDINTERVAL*4);
+        
+    }
+    
+    function pixelFix(){ //gets called once ball cannot reach bouncing area
+            map.beginPath();
+            map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+            map.closePath();
+            applyDeviation(-1);
+            //alert('hello my friend');
+        
+    }
+    
+    window.addEventListener('keydown', drawPad, false); //window object listening to keys going down
+    window.addEventListener('load', showPretitle, false);
+    //window.addEventListener('load', pixelFix, false);
+    
+    /*var userInput=[]; //we state this array to store listeners
+    userInput[0]=document.getElementById('SPECIFY MY INPUT');
+    userInput[0].addEventListener('keydown', drawPad, false);
+    
+    userInput[1]=document.getElementById('SPECIFY MY INPUT');
+    userInput[1].addEventListener('keyup', drawPad, false);*/
+    
+    function showPretitle(){
+        map.font='25px Andalus';
+        map.fillText('WELCOME TO',300,155);
+        setTimeout(showTitle, 1300);
+    }
+    
+    
+    function showTitle(){
+        map.font='85px Andalus bold';
+        map.fillText('Bricking Ball',240,220);
+        setTimeout(showStart, 1500);
+    }
+    
+    function showStart(){
+        map.font='40px Times New Roman';
+        map.fillText('click to start',410,420);
+        map.font='20px Tahoma';
+        map.fillText('by adr1script',840,520);
+        playzone.addEventListener('click',level1,false);
+    }
+    function padLeft(){
+        map.clearRect(padEnd-PADSTEP,FLOOR,PADSTEP,PADHEIGHT); //erases pad tail; on last frame 
+            padOrigin-=PADSTEP; //decrementing x coord for pad
+            padEnd-=PADSTEP;
+        map.beginPath();
+        map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+        map.closePath();
+    }
+    
+//--- end of left animation
+    
+    function padRight(){
+            map.clearRect(padOrigin,FLOOR,PADSTEP,PADHEIGHT);
+            padOrigin+=PADSTEP;
+            padEnd+=PADSTEP;
+        map.beginPath();
+        map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+        map.closePath();
+    }
+    //---end of right animation
+    
+    function drawPad(e){ //calls animation for left/right
+        if(e.keyCode===37 && y>DEVAREA1 && y<DEVAREA2){
+            applyDeviation(-1);
+            padLeft();
+        }
+        else if(e.keyCode===37 && y>DEVAREA2 && y<DEVAREA3){
+                applyDeviation(-2);
+                padLeft();
+            }else if(e.keyCode===37 && y>DEVAREA3 && y<DEVAREA4){
+                applyDeviation(-4);
+                document.getElementById('screen2').innerHTML='Dev: '+deviationUp;
+                padLeft();
+            }else if(e.keyCode===37 && y>DEVAREA4){
+                applyDeviation(-6);
+                document.getElementById('screen2').innerHTML='Dev: '+deviationUp;
+                padLeft();
+            }
+            else if(e.keyCode===37){ //standard movement no deviation
+            padLeft();
+            }
+        
+        if(e.keyCode===39 && y>DEVAREA1 && y<DEVAREA2){
+            applyDeviation(1);
+            padRight();
+        }
+        else if(e.keyCode===39 && y>DEVAREA2 && y<DEVAREA3){
+            applyDeviation(2);
+            padRight();
+            }else if(e.keyCode===39 && y>DEVAREA3 && y<DEVAREA4){
+                applyDeviation(4);
+                padRight();
+            }else if(e.keyCode===39 && y>DEVAREA4){
+                applyDeviation(6);
+                padRight();
+            }
+            else if(e.keyCode===39){
+            padRight();
+            }
+    }
+    
+    function motionUp(){
+        if(y<ROOF+5 && y>ROOF+1){
+            BALLSTEP=1;
+            if(y>ROOF+1 && y<ROOF+3){
+                falling=true;
+                BALLSTEP=3;
+                
+            }
+        }
+        
+        map.clearRect(x-RADIUS,y-RADIUS,RADIUS*2,RADIUS*2);
+            y-=BALLSTEP;
+            x+=deviationUp;
+        map.beginPath();
+        map.arc(x,y,RADIUS,0,Math.PI*2,false);
+        map.fill();
+        map.closePath();
+        
+    }
+    //---end of up animation
+    function motionDown(){
+        if(y<FLOOR-3 && y>FLOOR-12 && x>padOrigin-5 && x<padEnd+5){ //ball will bounce against pad
+            BALLSTEP=2; //slowing down ball to trigger switch
+            if(y<FLOOR-3 && y>FLOOR-8){ //actually bouncing
+            falling=false;
+                BALLSTEP=3;
+            }
+        }
+        
+        /* this area is an attempt to correct that BUG, when ball does not meet bouncing area over the pad, but hits closely and erases some pad pixels*/
+        
+        if(y>FLOOR-3 && y<FLOOR+10){
+            if(x>padOrigin-5 && x<padEnd-20){ //ball touched left border, out of bouncing area
+                x=padOrigin-6; //moves ball accordingly and kills the loop, to be executed once
+                map.beginPath();
+                map.clearRect(padOrigin,FLOOR-9,padWidth,RADIUS*3);//clears over the pad -ball frame after border hit-
+                map.clearRect(padOrigin,FLOOR+4,padWidth,RADIUS*3);//clears underneath the pad
+                map.closePath();
+                if(deviationDown>0 || deviationDown<0){
+                    map.clearRect(padOrigin-RADIUS*4,FLOOR-9,RADIUS*4,RADIUS*8);
+                }
+                deviationDown=-1;
+                pixelFix(); //re-draws pixels erased by ball hit
+            }else if(x<padEnd+5 && x>padOrigin+20){ //ball touched right border, out of bouncing area
+                x=padEnd+6;
+                map.beginPath();
+                map.clearRect(padOrigin,FLOOR-9,padWidth,RADIUS*3);
+                map.clearRect(padOrigin,FLOOR+4,padWidth,RADIUS*3);
+                map.closePath();
+                if(deviationDown>0 || deviationDown<0){
+                    map.clearRect(padEnd,FLOOR-9,RADIUS*4,RADIUS*8);
+                }
+                deviationDown=1;
+                pixelFix();
+            }
+        }
+
+        
+        
+        if(y>FLOOR+40 && lives>0){ //ball loses one life
+            lives-=1;
+            alert('oopsie');
+            map.clearRect(x-RADIUS,y-RADIUS,RADIUS*2,RADIUS*2); //clears dead ball frame
+            deviationDown=0; //reseting ball deviation
+            x=500;  //reseting ball position
+            y=100;
+            document.getElementById('screen').innerHTML='Your lives '+lives;
+                
+            }else if(y>FLOOR+40 && lives===0){ //ball dies
+                alert('shame on you, brah');
+                map.clearRect(x-RADIUS,y-RADIUS,RADIUS*2,RADIUS*2);
+                padOrigin=475;
+                padEnd=525;
+                clearInterval(ballInterval);
+                level1();
+        }
+        //standard falling movement
+        map.clearRect(x-RADIUS,y-RADIUS,RADIUS*2,RADIUS*2);
+            y+=BALLSTEP;
+            x+=deviationDown;
+        map.beginPath();
+        map.arc(x,y,RADIUS,0,Math.PI*2,false);
+        map.fill();
+        map.closePath();
+        
+    }
+    //---end of down animation
+    
+    /*function calculateDeviation(){
+        if(y<FLOOR-7 && y>FLOOR-15 && )
+    }*/
+    
+    function decideMotion(){
+        if(y>ROOF && falling===false){
+            motionUp();
+        }
+        
+        if(x<WALLLEFT || x>WALLRIGHT){ //bounce against left or right wall mirroring ball deviation
+            deviationUp=deviationUp/-1;
+            deviationDown=deviationDown/-1;
+        }
+        
+        if(y<ROOF+8){
+            BALLSTEP=2; //smoothing ball bounce
+        }
+        
+        if(y<ROOF+2){ //top switch like this, to be executed once, and independently from motion functions
+            deviationDown=deviationUp;
+            deviationUp=0;
+            BALLSTEP=3;
+        }
+        
+        if(y<FLOOR+50 && falling===true){
+            motionDown();
+            //calculateDeviation();
+        }
+    }
+    
+    //setTimeout(showPretitle, 1000);
+    
+    
+</script>
+
+	</body>
+
+</html>
