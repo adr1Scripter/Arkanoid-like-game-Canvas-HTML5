@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+        <meta charset='UTF-8'>
+        <link rel='stylesheet' type='text/css' href='styles_ball.css'>
+	</head>
+
+<body>
+    <header>
+    
+        <p id='screen'></p>
+        <p id='screen2'></p>
+        <p id='screen3'></p>
+        <p id='screen4'></p>
+        <br>
+        <div class='pannel'>
+            <input type='button' value='<' id='arrowLeft'>
+            <input type='button' value='>' id='arrowRight'>
+        <input type='button' value='x2' id='speedintervalsupra'>
+        <input type='button' value='+' id='speedintervalplus'>
+        
+    </div>
+    <canvas id='playzone' width='1000px' height='550px'></canvas>
+        
+    </header>
+    
+     <footer id='about'>
+     
+         <!--<p>Images used on this site are labelled by Google as appropiate for non-commercial purposes. Kanji characters by bexika -deviantart.com- and Mt. Fuji landscape by Moyan Brenn -flickr.com-. This website and its written content is copyright of Adrian Guerra - © Nihon Travels 2016. All rights reserved. </p>-->
+    </footer>
+    
+<script>
+    //---PSEUDOCONSTANT VARIABLES---//
+    var DEVAREA1=450;//determines from which y coord ball will receive deviation
+    var DEVAREA2=475;//same thing at a higher y, associated to a stronger deviation
+    var DEVAREA3=488;
+    var DEVAREA4=493;
+    var ENDAREA4=497;
+    var SPEEDINTERVAL=30;
+    var PADSTEP=30;
+    var ROOF=0;
+    var FLOOR=500;
+    var WALLRIGHT=998;
+    var WALLLEFT=2;
+    var BALLSTEP=[];
+    var RADIUS=3;
+    var PADHEIGHT=4;
+    
+    //---end of pseudoconstants
+    
+    //---WRITEABLE VARIABLES---//
+    
+    //0 index meaning 'ball zero' which won't show up, so array numeration starts by 1
+    
+    var x=[]; //start values for all balls
+        //x[0]=0;
+    var deviationUp=[];
+        //deviationUp[0]=0;
+    var deviationDown=[];
+        //deviationDown[0]=0;
+    var y=[];
+        //y[0]=0;
+    var falling=[];
+        //falling[0]=null;
+    var ballColor=[];
+    var bounced=[];
+    var padOrigin=475;
+    var padEnd=525;
+    var padWidth=50;
+    var lives=2;
+    var score=0;
+    
+    var howMany=3;
+    var bouncing=0;
+    var randomCoordX=[];
+    var randomCoordY=[];
+    var maxRandomCoordY=300; //first level
+    
+    //var whoBounced=0;
+    
+    //---end of variables
+    
+    
+    var playzone=document.getElementById('playzone');
+    var map=playzone.getContext('2d');
+    playzone.style.backgroundColor='black';
+    map.fillStyle='white';
+    
+    
+    function applyDeviation(value){ //deviates the ball who got into 'bouncing detection area'
+        
+            deviationUp[bouncing]=value;
+    }
+    
+    function randomCoords(){ //a random coord given for each ball
+        
+        var cellNum=howMany; //as balls
+        var cellWidth=(994/cellNum)*0.9; //90% of original cellWidth, otherwise the random addition makes last ball out of screen
+            //var noBallSpace;
+            
+            randomCoordX[1]=Math.round(cellWidth*0.5);
+        x[1]=randomCoordX[1]; //level 1 will write positions from 2nd ball
+        y[1]=10;
+        //3 pixel correction, to avoid drawing half ball
+        /*arbitrary positioning for first ball, the rest will add cellWidth + randomFactor*/
+        
+        
+        for(var i=1;i<howMany+1;i+=1){
+        /*randomCoordX[i]=Math.round((Math.random()/Math.random()/Math.random()/Math.random()));*/
+        
+            var freedomRange=cellWidth*0.25; //quarter of a cell
+                var randomFactor=Math.random()*freedomRange;
+            
+            function polarize(){
+                var dice=Math.random()*10;
+                if(dice>=5){
+                    randomFactor=randomFactor/-1
+                }else if(dice<5){
+                    randomFactor=randomFactor/1;
+                }
+            }
+        
+            
+        randomCoordX[i+1]=Math.round(randomCoordX[i]+cellWidth+randomFactor);
+        randomCoordY[i]=Math.round(Math.random()*maxRandomCoordY); //stablishes a floor for the random alocation of balls
+            
+            
+        
+        //x[i]=0;
+        //y[1]=0;
+        deviationUp[i]=0;
+        deviationDown[i]=0;
+        falling[i]=true;
+        BALLSTEP[i]=1;
+        }
+        level1();
+    }
+    
+    function level1(){ //first a quick view of level goals
+        map.clearRect(0,0,1000,550); //clears intro screen
+        map.font='36px Impact';
+        map.fillText('Hit 3 balls and I will be happy',260,200);
+        
+        setTimeout(function(){
+            map.clearRect(0,0,1000,450); //clears goals from screen
+            map.font='40px Impact';
+            map.fillText('LEVEL 1',413,240);
+            setTimeout(function(){
+                map.clearRect(400,200,200,100);
+            },1000);
+            }, 1500);
+        //deviationDown[1]=0;
+        //deviationUp[1]=0;
+        for(var i=2;i<howMany+1;i+=1){
+            x[i]=randomCoordX[i];
+            y[i]=randomCoordY[i];
+        }
+        /*x[1]=500;
+            x[2]=550;
+        y[1]=350;
+            y[2]=250;*/
+        lives=5;
+        document.getElementById('screen').innerHTML='Your lives '+lives;
+        map.beginPath();
+        map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+        map.closePath();
+        
+        ballInterval=setInterval(decideMotion,SPEEDINTERVAL);
+        //window.addEventListener('keydown', extraBall, false); //listener for Ball asked by user
+        
+    }
+    
+    function level2(){
+        bounced[1]=false; //breaks the condition to pass level 1
+        alert('goal!');
+        //PADSTEP=45;
+    }
+    
+    function pixelFix(){ //gets called once ball cannot reach bouncing area
+            map.beginPath();
+                map.fillStyle='white';
+            map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+            map.closePath();
+            applyDeviation(-1);
+            //alert('hello my friend');
+        
+    }
+    
+    window.addEventListener('keydown', drawPad, false); //window object listening to keys going down
+    window.addEventListener('load', randomCoords, false);
+    //window.addEventListener('load', pixelFix, false);
+    
+    /*var userInput=[]; //we state this array to store listeners
+    userInput[0]=document.getElementById('SPECIFY MY INPUT');
+    userInput[0].addEventListener('keydown', drawPad, false);
+    
+    userInput[1]=document.getElementById('SPECIFY MY INPUT');
+    userInput[1].addEventListener('keyup', drawPad, false);*/
+    
+    /*function showPretitle(){
+        map.font='25px Andalus';
+        map.fillText('WELCOME TO',300,155);
+        setTimeout(showTitle, 1300);
+    }
+    
+    
+    function showTitle(){
+        map.font='85px Andalus bold';
+        map.fillText('Bricking Ball',240,220);
+        setTimeout(showStart, 1500);
+    }
+    
+    function showStart(){
+        map.font='40px Times New Roman';
+        map.fillText('click to start',410,420);
+        map.font='20px Tahoma';
+        map.fillText('by adr1script',840,520);
+        playzone.addEventListener('click',level1,false);
+    }*/
+    function padLeft(){ //no iteration on this one
+        map.clearRect(padEnd-PADSTEP,FLOOR,PADSTEP,PADHEIGHT); //erases pad tail; on last frame 
+            padOrigin-=PADSTEP; //decrementing x coord for pad
+            padEnd-=PADSTEP;
+        map.beginPath();
+            map.fillStyle='white';
+        map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+        map.closePath();
+    }
+    
+//--- end of left animation
+    
+    function padRight(){ //no iteration on this one
+            map.clearRect(padOrigin,FLOOR,PADSTEP,PADHEIGHT);
+            padOrigin+=PADSTEP;
+            padEnd+=PADSTEP;
+        map.beginPath();
+            map.fillStyle='white';
+        map.fillRect(padOrigin,FLOOR,padWidth,PADHEIGHT);
+        map.closePath();
+    }
+    //---end of right animation
+    
+    function drawPad(e){ //calls animation for left/right
+        var done=false;
+        for(var i=1;i<howMany+1;i+=1){
+            if(e.keyCode===37 && y[i]>DEVAREA1 && y[i]<DEVAREA2 && falling[i]===true){
+                bouncing=i; //informs applyDeviation who is about to bounce
+                //padLeft();
+                applyDeviation(-1);               
+            }
+            else if(e.keyCode===37 && y[i]>DEVAREA2 && y[i]<DEVAREA3 && falling[i]===true){
+                bouncing=i;
+                //padLeft();    
+                applyDeviation(-2);              
+                    
+                }else if(e.keyCode===37 && y[i]>DEVAREA3 && y[i]<DEVAREA4 && falling[i]===true){
+                    bouncing=i;
+                    //padLeft();
+                    applyDeviation(-4);
+                    
+                }else if(e.keyCode===37 && y[i]>DEVAREA4 && y[i]<ENDAREA4 && falling[i]===true){
+                    bouncing=i;
+                    //padLeft();
+                    applyDeviation(-6);
+                    
+                }/*else if(e.keyCode===37){ //standard movement no deviation
+                    padLeft();
+                }*/
+        
+            if(e.keyCode===39 && y[i]>DEVAREA1 && y[i]<DEVAREA2 && falling[i]===true){
+                bouncing=i;
+                applyDeviation(1);
+                //padRight();
+            }
+            else if(e.keyCode===39 && y[i]>DEVAREA2 && y[i]<DEVAREA3 && falling[i]===true){
+                bouncing=i;
+                applyDeviation(2);
+                //padRight();
+                }else if(e.keyCode===39 && y[i]>DEVAREA3 && y[i]<DEVAREA4 && falling[i]===true){
+                    bouncing=i;
+                    applyDeviation(4);
+                    //padRight();
+                }else if(e.keyCode===39 && y[i]>DEVAREA4 && y[i]<ENDAREA4 && falling[i]===true){
+                    bouncing=i;
+                    applyDeviation(6);
+                    //padRight();
+                }/*
+                else if(e.keyCode===39){
+                padRight();
+                }*/
+            
+            
+        } //for loop finishes
+        
+        
+        //all set of conditions tested (as many times as balls), then we call movement
+        if(e.keyCode===37){
+            padLeft();
+        }
+        
+        if(e.keyCode===39){
+            padRight();
+        }
+    }
+    
+    //---end of drawPad function
+    
+    function motionUpAndDown(){
+        
+        for(var i=1;i<howMany+1;i+=1){
+            if(falling[i]===false){
+            map.clearRect(x[i]-RADIUS,y[i]-RADIUS,RADIUS*2,RADIUS*2);
+                y[i]-=BALLSTEP[i];
+                x[i]+=deviationUp[i];
+            map.beginPath();
+                
+    /****************************** COLOR FOR BALL STATE ***********************************/
+            if(bouncing===i){
+                ballColor[i]='#33cc33';
+                bounced[i]=true;
+            }/*else{
+                ballColor[i]='white'; //default color
+            }*/
+                
+                map.fillStyle=ballColor[i]; //apply appropiate color depending on Ball state
+            
+                
+    /****************************** COLOR FOR BALL STATE ***********************************/
+            map.arc(x[i],y[i],RADIUS,0,Math.PI*2,false);
+            map.fill();
+            map.closePath();
+            }
+            
+            if(falling[i]===true){
+                
+    //---end of up animations
+                
+        //---standard falling movement
+        map.clearRect(x[i]-RADIUS,y[i]-RADIUS,RADIUS*2,RADIUS*2);
+            y[i]+=BALLSTEP[i];
+            x[i]+=deviationDown[i];
+        map.beginPath();
+        map.arc(x[i],y[i],RADIUS,0,Math.PI*2,false);
+                map.fillStyle='white';
+        map.fill();
+        map.closePath();
+            }
+            
+        } //end of for loop
+        
+        
+        
+        document.getElementById('screen2').innerHTML='x[2]: '+x[2];
+        document.getElementById('screen3').innerHTML='y[2]: '+y[2];
+    }
+    //---end of motion
+    
+    //---MAIN FUNCTION will determine if ball falls, ascends or hits a wall.
+    
+    function decideMotion(){ //whole function body is a loop, we recicle the code for each ball. I rearranged motionUpAndDown() as a tail call, after this for loop finishes, motion needs to be called constantly anyway.
+        
+        /***SWITCHES FOR BALL ANIMATIONS***/
+        /***down switches (bounce, missed ball, etc.)originally were allocated inside motionDown()***/
+        
+        for(var i=1;i<howMany+1;i+=1){
+            /*if((y[i]>ROOF && falling[i]===false) || (y[i]<FLOOR+50 && falling[i]===true)){
+                motionUpAndDown();
+            }*/
+        
+            if(x[i]<WALLLEFT || x[i]>WALLRIGHT){ //bounce against left or right wall mirroring ball deviation
+                deviationUp[i]=deviationUp[i]/-1;
+                deviationDown[i]=deviationDown[i]/-1;
+            }
+        
+            /*if(y<ROOF+8){
+                BALLSTEP=2; //smoothing ball bounce
+            }*/
+
+            if(y[i]<ROOF+1){ //top switch like this, to be executed once, and independently from motion functions
+                deviationDown[i]=deviationUp[i];
+                deviationUp[i]=0;
+                falling[i]=true;
+                BALLSTEP[i]=1;
+            }
+            
+            //---BOUNCE ON PAD
+            /*First checking if ball comes down with maximum deviation, in a wider 'detection area'. This condition is added to fix the ball evading the bounce when gets down too accelerated*/
+            
+            if(y[i]<FLOOR-3 && y[i]>FLOOR-25 && x[i]>padOrigin-15 && x[i]<padEnd+15 && falling[i]===true && (deviationDown===6 || deviationDown===-6)){
+                //ball will bounce against pad
+                BALLSTEP[i]=2; //slowing down ball to trigger switch
+                if(y[i]<FLOOR-3 && y[i]>FLOOR-8){ //actually bouncing
+                falling[i]=false;
+                    BALLSTEP[i]=1;
+                    bouncing=i;
+                }
+            }else if(y[i]<FLOOR-3 && y[i]>FLOOR-15 && x[i]>padOrigin-5 && x[i]<padEnd+5 && falling[i]===true){ //ball will bounce against pad
+                BALLSTEP[i]=2; //slowing down ball to trigger switch
+                if(y[i]<FLOOR-3 && y[i]>FLOOR-8){ //actually bouncing
+                falling[i]=false;
+                    BALLSTEP[i]=1;
+                    bouncing=i;
+                    
+                    
+                }
+            }
+            
+            //---Animations for left & right pad kicks
+        
+            /*** LEFT KICK ***/
+            
+        if(y[i]>FLOOR-3 && y[i]<FLOOR+8){
+            if(x[i]<padOrigin+15 && x[i]>padOrigin-5){ //ball touched left border, out of bouncing area
+                x[i]=padOrigin-6; //moves ball accordingly and kills the loop, to be executed once
+                map.beginPath();
+                map.clearRect(padOrigin,FLOOR-9,padWidth,RADIUS*3);//clears over the pad -ball frame after border hit-
+                map.clearRect(padOrigin,FLOOR+4,padWidth,RADIUS*3);//clears underneath the pad
+                map.closePath();
+                if(deviationDown[i]>0 || deviationDown[i]<0){
+                    map.clearRect(padOrigin-RADIUS*4,FLOOR-9,RADIUS*4,RADIUS*8);
+                }
+                deviationDown[i]=-1;
+                pixelFix(); //re-draws pixels erased by ball hit
+                
+            }else if(x[i]>padEnd-15 && x[i]<padEnd+5){ //ball touched right border, out of bouncing area
+                
+             /*** RIGHT KICK ***/
+                x[i]=padEnd+6;
+                map.beginPath();
+                map.clearRect(padOrigin,FLOOR-9,padWidth,RADIUS*3);
+                map.clearRect(padOrigin,FLOOR+4,padWidth,RADIUS*3);
+                map.closePath();
+                if(deviationDown[i]>0 || deviationDown[i]<0){
+                    map.clearRect(padEnd,FLOOR-9,RADIUS*4,RADIUS*8);
+                }
+                deviationDown[i]=1;
+                pixelFix();
+            }else if(x[i]>=padOrigin+15 && x[i]<=padEnd-15){
+                pixelFix(); //if ball gets a x coord near middle of pad, evading kicks, let it fall and fix erased pixels
+            }
+        }
+            //---end of kick animations
+            
+        //---the user misses hitting ball with pad
+        
+        if(y[i]>FLOOR+40 && lives>0){ //ball loses one life
+            lives-=1;
+            alert('oopsie');
+            map.clearRect(x[i]-RADIUS,y[i]-RADIUS,RADIUS*2,RADIUS*2); //clears dead ball frame
+            deviationDown[i]=0; //reseting ball deviation
+            x[i]=500;  //reseting ball position
+            y[i]=350;
+            document.getElementById('screen').innerHTML='Your lives '+lives;
+                
+            }else if(y[i]>FLOOR+40 && lives===0){ //ball dies
+                alert('shame on you, brah');
+                map.clearRect(x[i]-RADIUS,y-RADIUS,RADIUS*2,RADIUS*2);
+                padOrigin=475;
+                padEnd=525;
+                clearInterval(ballInterval);
+                level1();
+        }
+    
+            
+    } //for loop finishes
+        //*/--/*/--/*/--/*/--/*/--/*/--/*/--/*/--/*/--/*/
+            
+                    if(bounced[1]===true && bounced[2]===true && bounced[3]===true){
+                                level2();
+                            }
+    //*/--/*/--/*/--/*/--/*/--/*/--/*/--/*/--/*/--/*/
+    motionUpAndDown();  
+    }
+    //***end of decideMotion() 
+    
+</script>
+
+	</body>
+
+</html>
